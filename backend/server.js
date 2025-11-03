@@ -5,7 +5,8 @@ const path = require("path");
 const { spawn } = require("child_process");
 
 const app = express();
-app.use(fileUpload());
+app.use(fileUpload({ limits: { fileSize: 20 * 1024 * 1024 } })); // max 20MB
+
 
 // Helper: run Ghostscript to compress a PDF
 function compressWithGhostscript(inputPath, outputPath, quality = "/ebook") {
@@ -85,11 +86,11 @@ app.post("/compress", async (req, res) => {
 
     res.setHeader("Content-Type", "application/pdf");
     res.setHeader("Content-Disposition", "attachment; filename=compressed.pdf");
-    res.send(compressed);
 
-    // cleanup
-    try { fs.unlinkSync(inputPath); } catch {}
-    try { fs.unlinkSync(outputPath); } catch {}
+    fs.createReadStream(outputPath).pipe(res).on("finish", () => {
+      try { fs.unlinkSync(inputPath); } catch {}
+      try { fs.unlinkSync(outputPath); } catch {}
+    });
 
   } catch (e) {
     console.error("❌ Server error:", e);

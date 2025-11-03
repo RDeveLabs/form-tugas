@@ -207,10 +207,11 @@ submitButtons.forEach(button => {
     const formData = new FormData();
     formData.append("pdf", new Blob([pdfBytes], { type: "application/pdf" }), "merged.pdf");
 
-    const response = await fetch("/compress", {
+    const response = await fetch("https://api.rdevelabs.com/compress", {
       method: "POST",
       body: formData
     });
+
 
     const compressedBlob = await response.blob();
     download(compressedBlob, `${nama} (${nim}) TI.25.A.2.pdf`, "application/pdf");
