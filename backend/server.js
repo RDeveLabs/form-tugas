@@ -5,7 +5,15 @@ const path = require("path");
 const { spawn } = require("child_process");
 
 const app = express();
-app.use(fileUpload({ limits: { fileSize: 20 * 1024 * 1024 } })); // max 20MB
+// izinkan frontend domain kamu
+app.use(cors({
+  origin: "https://rdevelabs.biz.id", // frontend domain
+  methods: ["GET", "POST"],
+  allowedHeaders: ["Content-Type"]
+}));
+app.use(express.json({ limit: "50mb" }));
+app.use(express.urlencoded({ limit: "50mb", extended: true }));
+
 
 
 // Helper: run Ghostscript to compress a PDF
