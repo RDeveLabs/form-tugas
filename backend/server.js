@@ -8,8 +8,19 @@ const cors = require("cors");
 
 const app = express();
 // izinkan frontend domain kamu
+const allowedOrigins = [
+  "https://rdevelabs.biz.id",
+  "https://www.rdevelabs.biz.id"
+];
+
 app.use(cors({
-  origin: "https://rdevelabs.biz.id", // frontend domain
+  origin: function (origin, callback) {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error("Not allowed by CORS: " + origin));
+    }
+  },
   methods: ["GET", "POST"],
   allowedHeaders: ["Content-Type"]
 }));
