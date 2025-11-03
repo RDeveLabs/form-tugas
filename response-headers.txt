@@ -1,0 +1,12 @@
+HTTP/2 200 
+date: Mon, 03 Nov 2025 02:19:00 GMT
+content-type: application/pdf
+content-length: 1171
+access-control-allow-origin: *
+vary: accept-encoding
+report-to: {"group":"cf-nel","max_age":604800,"endpoints":[{"url":"https://a.nel.cloudflare.com/report/v4?s=6Q8nnJy32iwt444DujLW1%2FZ%2BIOtTH9jv%2BUGU7K%2BySFgZNyFGivYZtobwPOxbvgCNwf3d%2Bh4VgdzWWV8UY1MpPT5LH0dJw689NgZS%2FMFb3OGNGHfWS1DzV%2FOrJVMT5283IaIiAG9iOm8a"}]}
+nel: {"report_to":"cf-nel","success_fraction":0.0,"max_age":604800}
+server: cloudflare
+cf-ray: 998862450b1a9c38-SIN
+alt-svc: h3=":443"; ma=86400
+

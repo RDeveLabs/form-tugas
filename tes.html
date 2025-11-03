@@ -1,0 +1,86 @@
+<html>
+  <head>
+    <meta charset="utf-8" />
+  </head>
+  <style>
+    body {
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+}
+
+p {
+  font-family: helvetica;
+  font-size: 24px;
+  text-align: center;
+  margin: 25px;
+}
+
+.small {
+  font-family: helvetica;
+  font-size: 18px;
+  text-align: center;
+  margin: 25px;
+}
+
+button {
+  background-color: #008CBA;
+  border: none;
+  color: white;
+  padding: 15px 32px;
+  text-align: center;
+  font-size: 16px;
+}
+
+  </style>
+
+  <body>
+    <p>Click the button to create a new PDF document with <code>pdf-lib</code></p>
+    <button id="btn">Create PDF</button>
+    <p class="small">(Your browser will download the resulting file)</p>
+  </body>
+
+  
+
+<script type="module">
+  import { PDFDocument, StandardFonts, rgb } from 'pdf-lib';
+
+  async function createPdf() {
+    const pdfDoc = await PDFDocument.create()
+
+      // Embed the Times Roman font
+      const timesRomanFont = await pdfDoc.embedFont(StandardFonts.TimesRoman)
+
+      // Add a blank page to the document
+      const page = pdfDoc.addPage()
+
+      // Get the width and height of the page
+      const { width, height } = page.getSize()
+
+      // Draw a string of text toward the top of the page
+      const fontSize = 30
+      page.drawText('Creating PDFs in JavaScript is awesome!', {
+        x: 50,
+        y: height - 4 * fontSize,
+        size: fontSize,
+        font: timesRomanFont,
+        color: rgb(0, 0.53, 0.71),
+      })
+
+      // Serialize the PDFDocument to bytes (a Uint8Array)
+      const pdfBytes = await pdfDoc.save()
+
+    const blob = new Blob([pdfBytes], { type: 'application/pdf' });
+    window.open(URL.createObjectURL(blob));
+
+  }
+
+  // binding event listener setelah script load
+  document.getElementById('btn').addEventListener('click', createPdf);
+</script>
+
+
+</html>
