@@ -207,7 +207,7 @@ submitButtons.forEach(button => {
     const formData = new FormData();
     formData.append("pdf", new Blob([pdfBytes], { type: "application/pdf" }), "merged.pdf");
 
-    const response = await fetch("https://rdevelabs.biz.id/compress", {
+    const response = await fetch("https://api.rdevelabs.biz.id/compress", {
       method: "POST",
       body: formData
     });
