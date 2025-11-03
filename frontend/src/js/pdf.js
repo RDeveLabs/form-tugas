@@ -164,6 +164,8 @@ function getFileSizeInMB(bytes) {
 
 // Gunakan getVisible untuk mendapatkan tombol submit yang aktif
 const submitButtons = document.querySelectorAll("#submit");
+const loadingOverlay = document.getElementById("loading-overlay");
+const loadingStatus = document.getElementById("loading-status");
 submitButtons.forEach(button => {
   button.addEventListener('click', async function() {
     try {
@@ -177,8 +179,6 @@ submitButtons.forEach(button => {
       const nim = getVisible('#nim')?.value;
       const pertemuan = parseInt(getVisible('#pertemuanBerapa')?.value);
       const sampai = parseInt(getVisible('#sampai')?.value);
-      const loadingOverlay = document.getElementById("loading-overlay");
-      const loadingStatus = document.getElementById("loading-status");
 
   
     if (!nama || !nim || isNaN(pertemuan) || isNaN(sampai)) {
