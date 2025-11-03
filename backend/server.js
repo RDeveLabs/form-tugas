@@ -3,6 +3,8 @@ const fileUpload = require("express-fileupload");
 const fs = require("fs");
 const path = require("path");
 const { spawn } = require("child_process");
+const cors = require("cors");
+
 
 const app = express();
 // izinkan frontend domain kamu
@@ -10,6 +12,10 @@ app.use(cors({
   origin: "https://rdevelabs.biz.id", // frontend domain
   methods: ["GET", "POST"],
   allowedHeaders: ["Content-Type"]
+}));
+app.use(fileUpload({
+  limits: { fileSize: 50 * 1024 * 1024 }, // 50 MB
+  abortOnLimit: true,
 }));
 app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ limit: "50mb", extended: true }));
