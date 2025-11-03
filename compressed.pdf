@@ -1,1 +1,0 @@
-{"success":false,"error":"Unrecognized Content-Type header value. FormData can only parse the following MIME types: multipart/form-data, application/x-www-form-urlencoded"}

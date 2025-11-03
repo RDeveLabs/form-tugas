@@ -1,4 +1,5 @@
 import { PDFDocument, StandardFonts, rgb } from 'pdf-lib';
+import { getVisible } from './script.js';
 
 // Create cover page for a pertemuan
 async function createCoverPage(pertemuanNum, nama, nim) {
@@ -199,39 +200,15 @@ submitButtons.forEach(button => {
     }
 
     const pdfBytes = await finalPdf.save();
-    
-    // Upload ke worker untuk kompresi
-    try {
-      const response = await fetch('https://pdf-merger-worker.rdevelopamd.workers.dev', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/pdf',
-        },
-        body: pdfBytes,
-      });
+    download(pdfBytes, `${nama} (${nim}) TI.25.A.2.pdf`, "application/pdf");
+    alert('File berhasil di-merge dan didownload!');
 
-      if (!response.ok) {
-        throw new Error('Kompresi gagal');
-      }
-
-      // Download compressed PDF langsung dari response
-      const compressedPdf = await response.arrayBuffer();
-      download(compressedPdf, `${nama} (${nim}) TI.25.A.2.pdf`, "application/pdf");
-      alert('File berhasil dikompresi dan didownload!');
     } catch (error) {
       console.error('Error:', error);
-      alert('Gagal mengkompresi file: ' + error.message);
-      // Download uncompressed version if compression fails
-      download(pdfBytes, `${nama} (${nim}) TI.25.A.2.pdf`, "application/pdf");
+      alert('Error: ' + error.message);
+    } finally {
+      button.disabled = false;
+      button.textContent = 'Kirim';
     }
-  } catch (error) {
-    console.error('Error:', error);
-    alert('Error: ' + error.message);
-  } finally {
-    button.disabled = false;
-    button.textContent = 'Kirim';
-  }
-});})
-
-// Import getVisible function jika belum
-import { getVisible } from './script.js';
+  });
+});
