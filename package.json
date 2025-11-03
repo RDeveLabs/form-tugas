@@ -2,19 +2,15 @@
     "scripts": {
         "dev": "vite",
         "build": "vite build",
-        "preview": "vite preview",
-        "worker:dev": "wrangler dev",
-        "worker:deploy": "wrangler publish"
+        "preview": "vite preview"
     },
     "dependencies": {
         "@tailwindcss/vite": "^4.1.16",
-        "compress-pdf": "^0.5.5",
         "pdf-lib": "^1.17.1",
         "tailwindcss": "^4.1.16"
     },
     "devDependencies": {
-        "vite": "^7.1.12",
-        "wrangler": "^4.45.3"
+        "vite": "^7.1.12"
     },
     "name": "form-tugas",
     "version": "1.0.0",

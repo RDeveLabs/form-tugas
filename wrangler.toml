@@ -1,9 +1,0 @@
-name = "pdf-merger-worker"
-main = "./workers/upload.js"
-compatibility_date = "2023-01-01"
-
-[vars]
-ILOVEPDF_PUBLIC_KEY = "project_public_44f56297c51bd5f0504b2e7a8ed5a934_RpL0Ve45457117ca24b772b4fa8cc0a85ad37"
-
-# Cloudflare Pages config
-pages_build_output_dir = "dist"
