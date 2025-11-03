@@ -13,6 +13,7 @@ const compressQueue = new Queue("compress-pdf", {
 const app = express();
 app.use(cors());
 app.use(fileUpload({ limits: { fileSize: 50 * 1024 * 1024 }, abortOnLimit: true }));
+app.use("/files", express.static(path.join(__dirname, "public", "files")));
 
 app.post("/compress", async (req, res) => {
   if (!req.files || !req.files.pdf) return res.status(400).send("No PDF uploaded");

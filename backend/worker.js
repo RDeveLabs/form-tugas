@@ -34,6 +34,13 @@ const worker = new Worker("compress-pdf", async job => {
   try {
     await compressWithGhostscript(inputPath, outputPath);
     console.log("✅ Kompresi selesai:", outputPath);
+
+    const publicPath = path.join(__dirname, "public", "files");
+    fs.mkdirSync(publicPath, { recursive: true });
+
+    const finalPath = path.join(publicPath, `${uuid}.pdf`);
+    fs.renameSync(outputPath, finalPath);
+
   } catch (err) {
     console.error("❌ Gagal kompresi:", err.message);
   } finally {
