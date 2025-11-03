@@ -204,6 +204,9 @@ submitButtons.forEach(button => {
     try {
       const response = await fetch('https://pdf-merger-worker.rdevelopamd.workers.dev', {
         method: 'POST',
+        headers: {
+          'Content-Type': 'application/pdf',
+        },
         body: pdfBytes,
       });
 
