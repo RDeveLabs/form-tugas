@@ -169,12 +169,18 @@ submitButtons.forEach(button => {
     try {
       button.disabled = true;
       button.textContent = 'Memproses...';
+      loadingOverlay.classList.remove("hidden");
+      loadingStatus.textContent = "Mengunggah...";
+
 
       const nama = getVisible('#nama')?.value;
       const nim = getVisible('#nim')?.value;
       const pertemuan = parseInt(getVisible('#pertemuanBerapa')?.value);
       const sampai = parseInt(getVisible('#sampai')?.value);
+      const loadingOverlay = document.getElementById("loading-overlay");
+      const loadingStatus = document.getElementById("loading-status");
 
+  
     if (!nama || !nim || isNaN(pertemuan) || isNaN(sampai)) {
       alert('Mohon lengkapi semua data');
       return;
@@ -206,6 +212,7 @@ submitButtons.forEach(button => {
     // kirim ke server untuk dikompres
     const formData = new FormData();
     formData.append("pdf", new Blob([pdfBytes], { type: "application/pdf" }), "merged.pdf");
+    loadingStatus.textContent = "Mengompres...";
 
     const response = await fetch("https://api.rdevelabs.biz.id/compress", {
       method: "POST",
@@ -223,6 +230,8 @@ submitButtons.forEach(button => {
     } finally {
       button.disabled = false;
       button.textContent = 'Kirim';
+      loadingOverlay.classList.add("hidden");
+
     }
   });
 });

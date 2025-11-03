@@ -134,6 +134,14 @@
         </div>
         <button id="submit" class="bg-amber-100 box-border w-full p-4 rounded-xl text-xl font-judul hover:bg-amber-900 hover:text-amber-50 duration-300">Download</button>
     </div>
+
+    <div id="loading-overlay" class="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50 hidden">
+        <div class="bg-white px-6 py-4 rounded-lg shadow-lg text-center">
+            <div class="animate-spin h-8 w-8 border-4 border-gray-300 border-t-blue-500 rounded-full mx-auto mb-3"></div>
+            <p id="loading-status" class="text-sm font-semibold text-gray-700">Memproses...</p>
+        </div>
+    </div>
+
     <script type="module" src="./src/js/main.js"></script>
   </body>
 </html>
