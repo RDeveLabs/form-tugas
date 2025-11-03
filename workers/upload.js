@@ -2,39 +2,49 @@
 export default {
   async fetch(request, env) {
     // Handle CORS
+    const corsHeaders = {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type',
+      'Access-Control-Max-Age': '86400',
+    };
+
+    // Handle CORS preflight
     if (request.method === 'OPTIONS') {
       return new Response(null, {
-        headers: {
-          'Access-Control-Allow-Origin': '*',
-          'Access-Control-Allow-Methods': 'POST',
-          'Access-Control-Allow-Headers': 'Content-Type'
-        }
+        status: 204,
+        headers: corsHeaders
       });
     }
 
     if (request.method !== 'POST') {
-      return new Response('Method not allowed', { status: 405 });
+      return new Response('Method not allowed', { 
+        status: 405,
+        headers: corsHeaders
+      });
     }
 
     try {
-      const formData = await request.formData();
-      const file = formData.get('file');
-      const filename = formData.get('filename');
-
-      if (!file || !filename) {
-        throw new Error('File and filename are required');
+      // Get PDF bytes directly from request body
+      const pdfBytes = await request.arrayBuffer();
+      
+      if (!pdfBytes || pdfBytes.byteLength === 0) {
+        throw new Error('No PDF data received');
       }
 
-      // Perform ILovePDF compress flow and return the compressed PDF directly
-      const compressedBlob = await compressPdf(file, env.ILOVEPDF_PUBLIC_KEY);
+      // Create a blob for ILovePDF API
+      const pdfBlob = new Blob([pdfBytes], { type: 'application/pdf' });
+
+      // Perform ILovePDF compress flow
+      const compressedBlob = await compressPdf(pdfBlob, env.ILOVEPDF_PUBLIC_KEY);
 
       // Return PDF bytes directly so the caller can download/inspect the compressed file
       return new Response(await compressedBlob.arrayBuffer(), {
         status: 200,
         headers: {
-          'Content-Type': 'application/pdf',
-          'Content-Length': String(compressedBlob.size || compressedBlob.byteLength || 0),
-          'Access-Control-Allow-Origin': '*'
+                    'Content-Type': 'application/pdf',
+          'Content-Length': String(compressedBlob.size),
+          ...corsHeaders
         }
       });
     } catch (error) {
