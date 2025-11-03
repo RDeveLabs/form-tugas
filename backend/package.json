@@ -12,8 +12,10 @@
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
+    "bullmq": "^5.63.0",
     "compress-pdf": "^0.5.5",
     "express": "^5.1.0",
-    "express-fileupload": "^1.5.2"
+    "express-fileupload": "^1.5.2",
+    "ioredis": "^5.8.2"
   }
 }
