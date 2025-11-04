@@ -16,7 +16,6 @@ const allowedOrigins = [
   "https://www.rdevelabs.biz.id"
 ];
 
-app.use(express.static(path.join(__dirname, "public")));
 
 app.use(cors({
   origin: function (origin, callback) {
@@ -46,6 +45,10 @@ const oauth2Client = new google.auth.OAuth2(
   CLIENT_SECRET,
   REDIRECT_URI
 );
+
+console.log("CLIENT_ID:", process.env.CLIENT_ID);
+console.log("REDIRECT_URI:", process.env.REDIRECT_URI);
+
 
 // coba load token.json kalau ada
 if (fs.existsSync("token.json")) {
