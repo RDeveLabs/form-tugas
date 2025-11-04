@@ -7,7 +7,6 @@ const cors = require("cors");
 const { spawn } = require("child_process");
 const { google } = require("googleapis");
 
-
 const app = express();
 
 // CORS whitelist
@@ -15,7 +14,6 @@ const allowedOrigins = [
   "https://rdevelabs.biz.id",
   "https://www.rdevelabs.biz.id"
 ];
-
 
 app.use(cors({
   origin: function (origin, callback) {
@@ -46,13 +44,13 @@ const oauth2Client = new google.auth.OAuth2(
   REDIRECT_URI
 );
 
-console.log("CLIENT_ID:", process.env.CLIENT_ID);
-console.log("REDIRECT_URI:", process.env.REDIRECT_URI);
-
+console.log("CLIENT_ID:", CLIENT_ID);
+console.log("REDIRECT_URI:", REDIRECT_URI);
 
 // coba load token.json kalau ada
-if (fs.existsSync("token.json")) {
-  const tokens = JSON.parse(fs.readFileSync("token.json"));
+const tokenPath = path.join(__dirname, "token.json");
+if (fs.existsSync(tokenPath)) {
+  const tokens = JSON.parse(fs.readFileSync(tokenPath));
   oauth2Client.setCredentials(tokens);
 }
 
@@ -67,11 +65,16 @@ app.get("/login", (req, res) => {
 
 // callback setelah login
 app.get("/oauth2callback", async (req, res) => {
-  const { code } = req.query;
-  const { tokens } = await oauth2Client.getToken(code);
-  oauth2Client.setCredentials(tokens);
-  fs.writeFileSync("token.json", JSON.stringify(tokens));
-  res.send("✅ Login berhasil, token disimpan!");
+  try {
+    const { code } = req.query;
+    const { tokens } = await oauth2Client.getToken(code);
+    oauth2Client.setCredentials(tokens);
+    fs.writeFileSync(tokenPath, JSON.stringify(tokens));
+    res.send("✅ Login berhasil, token disimpan!");
+  } catch (err) {
+    console.error("OAuth2 Error:", err.message);
+    res.status(500).json({ success: false, error: "OAuth2 callback gagal", details: err.message });
+  }
 });
 
 // fungsi kompres PDF pakai Ghostscript
@@ -104,7 +107,7 @@ function compressWithGhostscript(inputPath, outputPath, quality = "/ebook") {
 app.post("/compress-upload", async (req, res) => {
   try {
     if (!req.files || !req.files.pdf) {
-      return res.status(400).send("No PDF uploaded");
+      return res.status(400).json({ success: false, error: "No PDF uploaded" });
     }
 
     const file = req.files.pdf;
@@ -122,13 +125,11 @@ app.post("/compress-upload", async (req, res) => {
 
     // kompres pakai Ghostscript
     await compressWithGhostscript(inputPath, outputPath);
-    if (!req.files || !req.files.pdf) {
-      return res.status(400).json({ success: false, error: "No PDF uploaded" });
-    }
 
     if (!fs.existsSync(outputPath)) {
       return res.status(500).json({ success: false, error: "Compression failed" });
     }
+
     // upload hasil kompres ke Google Drive
     const drive = google.drive({ version: "v3", auth: oauth2Client });
     const fileMetadata = { 
@@ -156,14 +157,20 @@ app.post("/compress-upload", async (req, res) => {
       webContentLink: responseDrive.data.webContentLink
     });
 
-
   } catch (err) {
     console.error("❌ Error:", err.message);
     res.status(500).json({ success: false, error: "Gagal compress+upload", details: err.message });
   }
 });
 
+// handler global biar nggak exit diam-diam
+process.on("unhandledRejection", err => {
+  console.error("Unhandled Rejection:", err);
+});
+process.on("uncaughtException", err => {
+  console.error("Uncaught Exception:", err);
+});
 
-app.listen(3000, () => {
-  console.log("🚀 Server running on http://localhost:3000");
+app.listen(process.env.PORT || 3000, () => {
+  console.log(`🚀 Server running on http://localhost:${process.env.PORT || 3000}`);
 });
