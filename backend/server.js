@@ -96,13 +96,16 @@ function compressWithGhostscript(inputPath, outputPath, quality = "/ebook") {
   });
 }
 
-// endpoint compress
-app.post("/compress", async (req, res) => {
+// endpoint compress + upload ke Google Drive
+app.post("/compress-upload", async (req, res) => {
   try {
     if (!req.files || !req.files.pdf) {
       return res.status(400).send("No PDF uploaded");
     }
 
+    const file = req.files.pdf;
+
+    // bikin folder temp unik
     const uuid = crypto.randomUUID();
     const tempDir = path.join(__dirname, "temp", uuid);
     fs.mkdirSync(tempDir, { recursive: true });
@@ -110,48 +113,25 @@ app.post("/compress", async (req, res) => {
     const inputPath = path.join(tempDir, "input.pdf");
     const outputPath = path.join(tempDir, "output.pdf");
 
-    await req.files.pdf.mv(inputPath);
+    // simpan file asli dulu
+    await file.mv(inputPath);
+
+    // kompres pakai Ghostscript
     await compressWithGhostscript(inputPath, outputPath);
 
     if (!fs.existsSync(outputPath)) {
       return res.status(500).send("Compression failed");
     }
 
-    res.setHeader("Content-Type", "application/pdf");
-    res.setHeader("Content-Disposition", "attachment; filename=compressed.pdf");
-
-    const stream = fs.createReadStream(outputPath);
-    stream.pipe(res);
-    stream.on("close", () => {
-      fs.rmSync(tempDir, { recursive: true, force: true });
-    });
-
-  } catch (err) {
-    console.error("❌ Error:", err.message);
-    res.status(500).send("Server error: " + err.message);
-  }
-});
-
-// endpoint upload ke Google Drive
-app.post("/upload", async (req, res) => {
-  try {
-    if (!req.files || !req.files.file) {
-      return res.status(400).send("No file uploaded");
-    }
-
-    const file = req.files.file;
-
+    // upload hasil kompres ke Google Drive
     const drive = google.drive({ version: "v3", auth: oauth2Client });
-
     const fileMetadata = { 
       name: file.name,
       parents: ["1U3tc5qIkXtE_keQjkaWMXfjBGuiRdnFM"] // ID folder tujuan
     };
-
     const media = {
       mimeType: file.mimetype,
-      body: Buffer.isBuffer(file.data) ? 
-            require("stream").Readable.from(file.data) : file.data
+      body: fs.createReadStream(outputPath)
     };
 
     const responseDrive = await drive.files.create({
@@ -160,16 +140,21 @@ app.post("/upload", async (req, res) => {
       fields: "id, webViewLink, webContentLink"
     });
 
+    // hapus file lokal setelah selesai
+    fs.rmSync(tempDir, { recursive: true, force: true });
+
     res.send(`
-      File berhasil diupload ke Google Drive!<br>
+      ✅ File berhasil dikompres & diupload ke Google Drive!<br>
       ID: ${responseDrive.data.id}<br>
       Link view: <a href="${responseDrive.data.webViewLink}" target="_blank">${responseDrive.data.webViewLink}</a>
     `);
+
   } catch (err) {
-    console.error(err);
-    res.status(500).send("Gagal upload ke Google Drive: " + err.message);
+    console.error("❌ Error:", err.message);
+    res.status(500).send("Gagal compress+upload: " + err.message);
   }
 });
+
 
 app.listen(3000, () => {
   console.log("🚀 Server running on http://localhost:3000");
