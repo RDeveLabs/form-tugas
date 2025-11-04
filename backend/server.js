@@ -143,11 +143,13 @@ app.post("/compress-upload", async (req, res) => {
     // hapus file lokal setelah selesai
     fs.rmSync(tempDir, { recursive: true, force: true });
 
-    res.send(`
-      ✅ File berhasil dikompres & diupload ke Google Drive!<br>
-      ID: ${responseDrive.data.id}<br>
-      Link view: <a href="${responseDrive.data.webViewLink}" target="_blank">${responseDrive.data.webViewLink}</a>
-    `);
+    res.json({
+      success: true,
+      id: responseDrive.data.id,
+      webViewLink: responseDrive.data.webViewLink,
+      webContentLink: responseDrive.data.webContentLink
+    });
+
 
   } catch (err) {
     console.error("❌ Error:", err.message);

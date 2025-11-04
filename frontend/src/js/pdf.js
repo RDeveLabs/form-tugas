@@ -251,9 +251,9 @@ uploadBtn.addEventListener("click", async () => {
       body: formData
     });
 
-    const compressedBlob = await response.blob();
-    download(compressedBlob, `${nama} (${nim}) TI.25.A.2.pdf`, "application/pdf");
-    alert("File berhasil dikompres & diupload!");
+    const result = await response.json();
+    alert(`✅ File berhasil diupload ke Google Drive!\nLink: ${result.webViewLink}`);
+
   } catch (err) {
     console.error(err);
     alert("Error upload: " + err.message);
