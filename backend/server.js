@@ -5,17 +5,37 @@ const path = require("path");
 const crypto = require("crypto");
 const cors = require("cors");
 const { spawn } = require("child_process");
+const { google } = require("googleapis");
+
+require("dotenv").config();
 
 const app = express();
 
+// CORS whitelist
 const allowedOrigins = [
   "https://rdevelabs.biz.id",
   "https://www.rdevelabs.biz.id"
 ];
 
-const { google } = require("googleapis");
-const fs = require("fs");
+app.use(cors({
+  origin: function (origin, callback) {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error("Not allowed by CORS: " + origin));
+    }
+  },
+  methods: ["GET", "POST"],
+  allowedHeaders: ["Content-Type"]
+}));
 
+// enable file upload
+app.use(fileUpload({
+  limits: { fileSize: 50 * 1024 * 1024 }, // 50 MB
+  abortOnLimit: true,
+}));
+
+// Google OAuth2 setup
 const CLIENT_ID = process.env.CLIENT_ID;
 const CLIENT_SECRET = process.env.CLIENT_SECRET;
 const REDIRECT_URI = process.env.REDIRECT_URI;
@@ -50,24 +70,7 @@ app.get("/oauth2callback", async (req, res) => {
   res.send("✅ Login berhasil, token disimpan!");
 });
 
-
-app.use(cors({
-  origin: function (origin, callback) {
-    if (!origin || allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      callback(new Error("Not allowed by CORS: " + origin));
-    }
-  },
-  methods: ["GET", "POST"],
-  allowedHeaders: ["Content-Type"]
-}));
-
-app.use(fileUpload({
-  limits: { fileSize: 50 * 1024 * 1024 },
-  abortOnLimit: true,
-}));
-
+// fungsi kompres PDF pakai Ghostscript
 function compressWithGhostscript(inputPath, outputPath, quality = "/ebook") {
   return new Promise((resolve, reject) => {
     const args = [
@@ -93,6 +96,7 @@ function compressWithGhostscript(inputPath, outputPath, quality = "/ebook") {
   });
 }
 
+// endpoint compress
 app.post("/compress", async (req, res) => {
   try {
     if (!req.files || !req.files.pdf) {
@@ -128,18 +132,26 @@ app.post("/compress", async (req, res) => {
   }
 });
 
-app.post("/upload", upload.single("file"), async (req, res) => {
+// endpoint upload ke Google Drive
+app.post("/upload", async (req, res) => {
   try {
+    if (!req.files || !req.files.file) {
+      return res.status(400).send("No file uploaded");
+    }
+
+    const file = req.files.file;
+
     const drive = google.drive({ version: "v3", auth: oauth2Client });
 
     const fileMetadata = { 
-      name: req.file.originalname,
-      parents: ["1U3tc5qIkXtE_keQjkaWMXfjBGuiRdnFM"] // ID folder
+      name: file.name,
+      parents: ["1U3tc5qIkXtE_keQjkaWMXfjBGuiRdnFM"] // ID folder tujuan
     };
-    
+
     const media = {
-      mimeType: req.file.mimetype,
-      body: require("fs").createReadStream(req.file.path)
+      mimeType: file.mimetype,
+      body: Buffer.isBuffer(file.data) ? 
+            require("stream").Readable.from(file.data) : file.data
     };
 
     const responseDrive = await drive.files.create({
@@ -147,9 +159,6 @@ app.post("/upload", upload.single("file"), async (req, res) => {
       media,
       fields: "id, webViewLink, webContentLink"
     });
-
-    // hapus file lokal setelah upload
-    require("fs").unlinkSync(req.file.path);
 
     res.send(`
       File berhasil diupload ke Google Drive!<br>
@@ -161,7 +170,6 @@ app.post("/upload", upload.single("file"), async (req, res) => {
     res.status(500).send("Gagal upload ke Google Drive: " + err.message);
   }
 });
-
 
 app.listen(3000, () => {
   console.log("🚀 Server running on http://localhost:3000");
