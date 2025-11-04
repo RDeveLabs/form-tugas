@@ -3,9 +3,7 @@ import { getVisible } from './script.js';
 import * as pdfjsLib from "/pdfjs/pdf.mjs";
 
 // kasih tahu lokasi worker
-
-pdfjsLib.GlobalWorkerOptions.workerSrc =
-        "https://cdn.jsdelivr.net/npm/pdfjs-dist@4.2.67/build/pdf.worker.min.js";
+pdfjsLib.GlobalWorkerOptions.workerSrc = "/pdfjs/pdf.worker.mjs";
 
 
 let previewBytes = null;
@@ -216,29 +214,29 @@ previewBtn.addEventListener("click", async () => {
     previewBytes = await finalPdf.save();
 
     // render dengan PDF.js
-    const pdfData = new Uint8Array(previewBytes);
-    const loadingTask = pdfjsLib.getDocument({ data: pdfData });
+  const pdfData = new Uint8Array(previewBytes);
+  const loadingTask = pdfjsLib.getDocument({ data: pdfData });
 
-    loadingTask.promise.then(async (pdf) => {
-      const container = document.getElementById("pdf-container");
-      container.innerHTML = ""; // clear preview lama
+  loadingTask.promise.then(async (pdf) => {
+    const container = document.getElementById("pdf-container");
+    container.innerHTML = ""; // clear preview lama
 
-      for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
-        const page = await pdf.getPage(pageNum);
+    for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+      const page = await pdf.getPage(pageNum);
 
-        const scale = 1.2; // zoom level
-        const viewport = page.getViewport({ scale });
+      const scale = 1.2; // zoom level
+      const viewport = page.getViewport({ scale });
 
-        const canvas = document.createElement("canvas");
-        const context = canvas.getContext("2d");
-        canvas.height = viewport.height;
-        canvas.width = viewport.width;
+      const canvas = document.createElement("canvas");
+      const context = canvas.getContext("2d");
+      canvas.height = viewport.height;
+      canvas.width = viewport.width;
 
-        container.appendChild(canvas);
+      container.appendChild(canvas);
 
-        await page.render({ canvasContext: context, viewport }).promise;
-      }
-    });
+      await page.render({ canvasContext: context, viewport }).promise;
+    }
+  });
 
 
     // pindah halaman
