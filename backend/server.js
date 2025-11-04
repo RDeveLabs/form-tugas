@@ -119,11 +119,13 @@ app.post("/compress-upload", async (req, res) => {
 
     // kompres pakai Ghostscript
     await compressWithGhostscript(inputPath, outputPath);
-
-    if (!fs.existsSync(outputPath)) {
-      return res.status(500).send("Compression failed");
+    if (!req.files || !req.files.pdf) {
+      return res.status(400).json({ success: false, error: "No PDF uploaded" });
     }
 
+    if (!fs.existsSync(outputPath)) {
+      return res.status(500).json({ success: false, error: "Compression failed" });
+    }
     // upload hasil kompres ke Google Drive
     const drive = google.drive({ version: "v3", auth: oauth2Client });
     const fileMetadata = { 
@@ -154,7 +156,7 @@ app.post("/compress-upload", async (req, res) => {
 
   } catch (err) {
     console.error("❌ Error:", err.message);
-    res.status(500).send("Gagal compress+upload: " + err.message);
+    res.status(500).json({ success: false, error: "Gagal compress+upload", details: err.message });
   }
 });
 

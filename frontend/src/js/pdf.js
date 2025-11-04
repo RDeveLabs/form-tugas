@@ -251,7 +251,13 @@ uploadBtn.addEventListener("click", async () => {
       body: formData
     });
 
+    if (!response.ok) {
+      const text = await response.text(); // fallback kalau bukan JSON
+      throw new Error("Server error: " + text);
+    }
+
     const result = await response.json();
+
     alert(`✅ File berhasil diupload ke Google Drive!\nLink: ${result.webViewLink}`);
 
   } catch (err) {
