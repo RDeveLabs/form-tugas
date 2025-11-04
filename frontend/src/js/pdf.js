@@ -1,6 +1,9 @@
 import { PDFDocument, StandardFonts, rgb } from 'pdf-lib';
 import { getVisible } from './script.js';
 
+
+let previewBytes = null;
+
 // Create cover page for a pertemuan
 async function createCoverPage(pertemuanNum, nama, nim) {
   const pdfDoc = await PDFDocument.create()
@@ -163,24 +166,23 @@ function getFileSizeInMB(bytes) {
 }
 
 // Gunakan getVisible untuk mendapatkan tombol submit yang aktif
-const submitButtons = document.querySelectorAll("#submit");
-const loadingOverlay = document.getElementById("loading-overlay");
+const previewBtn = document.getElementById("preview");
+const homePage = document.getElementById("home");
+const previewPage = document.getElementById("pratinjau");
+const iframeView = document.getElementById("view");
+const backBtn = document.getElementById("back");
+const uploadBtn = document.getElementById("upload"); // ganti id di HTML
+const loadingOverlay = document.getElementById("loading-overlay"); 
 const loadingStatus = document.getElementById("loading-status");
-submitButtons.forEach(button => {
-  button.addEventListener('click', async function() {
-    try {
-      button.disabled = true;
-      button.textContent = 'Memproses...';
-      loadingOverlay.classList.remove("hidden");
-      loadingStatus.textContent = "Mengunggah...";
 
 
-      const nama = getVisible('#nama')?.value;
-      const nim = getVisible('#nim')?.value;
-      const pertemuan = parseInt(getVisible('#pertemuanBerapa')?.value);
-      const sampai = parseInt(getVisible('#sampai')?.value);
+previewBtn.addEventListener("click", async () => {
+  try {
+    const nama = getVisible('#nama')?.value;
+    const nim = getVisible('#nim')?.value;
+    const pertemuan = parseInt(getVisible('#pertemuanBerapa')?.value);
+    const sampai = parseInt(getVisible('#sampai')?.value);
 
-  
     if (!nama || !nim || isNaN(pertemuan) || isNaN(sampai)) {
       alert('Mohon lengkapi semua data');
       return;
@@ -188,14 +190,14 @@ submitButtons.forEach(button => {
 
     const finalPdf = await PDFDocument.create();
 
-    for(let i = pertemuan; i <= sampai; i++) {
+    for (let i = pertemuan; i <= sampai; i++) {
       const coverBytes = await createCoverPage(i, nama, nim);
       const fileInput = document.getElementById(`files${i}`);
-        
-      if(fileInput?.files[0]) {
+
+      if (fileInput?.files[0]) {
         const fileBytes = await fileInput.files[0].arrayBuffer();
         const mergedBytes = await mergePDFs(coverBytes, fileBytes);
-        
+
         const mergedDoc = await PDFDocument.load(mergedBytes);
         const pages = await finalPdf.copyPages(mergedDoc, mergedDoc.getPageIndices());
         pages.forEach((page) => finalPdf.addPage(page));
@@ -204,34 +206,58 @@ submitButtons.forEach(button => {
         return;
       }
     }
-    console.log("Total pages in finalPdf:", finalPdf.getPageCount());
-    const pdfBytes = await finalPdf.save();
-    console.log("Final PDF size (bytes):", pdfBytes.length);
 
+    previewBytes = await finalPdf.save();
 
-    // kirim ke server untuk dikompres
-    const formData = new FormData();
-    formData.append("pdf", new Blob([pdfBytes], { type: "application/pdf" }), "merged.pdf");
+    // tampilkan di iframe
+    const blob = new Blob([previewBytes], { type: "application/pdf" });
+    iframeView.src = URL.createObjectURL(blob);
+
+    // pindah halaman
+    homePage.style.display = "none";
+    previewPage.style.display = "flex";
+
+  } catch (err) {
+    console.error(err);
+    alert("Gagal membuat preview: " + err.message);
+  }
+});
+
+// Tombol Back
+backBtn.addEventListener("click", () => {
+  previewPage.style.display = "none";
+  homePage.style.display = "flex";
+});
+
+// Tombol Upload (Compress & Download)
+uploadBtn.addEventListener("click", async () => {
+  if (!previewBytes) {
+    alert("Belum ada file preview!");
+    return;
+  }
+
+  try {
+    loadingOverlay.classList.remove("hidden");
     loadingStatus.textContent = "Mengompres...";
+
+    const nama = getVisible('#nama')?.value;
+    const nim = getVisible('#nim')?.value;
+
+    const formData = new FormData();
+    formData.append("pdf", new Blob([previewBytes], { type: "application/pdf" }), "merged.pdf");
 
     const response = await fetch("https://api.rdevelabs.biz.id/compress", {
       method: "POST",
       body: formData
     });
 
-
     const compressedBlob = await response.blob();
     download(compressedBlob, `${nama} (${nim}) TI.25.A.2.pdf`, "application/pdf");
-    alert('File berhasil di-merge dan didownload!');
-
-    } catch (error) {
-      console.error('Error:', error);
-      alert('Error: ' + error.message);
-    } finally {
-      button.disabled = false;
-      button.textContent = 'Kirim';
-      loadingOverlay.classList.add("hidden");
-
-    }
-  });
+    alert("File berhasil dikompres & didownload!");
+  } catch (err) {
+    console.error(err);
+    alert("Error upload: " + err.message);
+  } finally {
+    loadingOverlay.classList.add("hidden");
+  }
 });

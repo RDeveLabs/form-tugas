@@ -5,14 +5,16 @@ function getVisible(selector) {
 }
 
 // pasang event listener hanya jika elemen ada
-const nextBtn = document.getElementById("next");
-if (nextBtn) nextBtn.addEventListener('click', () => showPage("tugas"));
 
 const backBtn = document.getElementById("back");
 if (backBtn) backBtn.addEventListener('click', () => showPage("home"));
 
 const spanBtn = document.getElementById("span");
 if (spanBtn) spanBtn.addEventListener('click', tampilkanSpan);
+
+document.getElementById("preview").addEventListener('click', function() {
+  showPage("pratinjau");
+})
 
 // Fungsi untuk menampilkan halaman yang dipilih
 function showPage(page) {
@@ -46,7 +48,6 @@ function tampilkanSpan() {
   if (!container) return;
 
   container.innerHTML = ""; // reset isi span
-  document.getElementById("filePage").style = "height: 500px";
   document.getElementById("filePageMB").style = "";
 
   if (!isNaN(pertemuan) && !isNaN(sampai)) {
