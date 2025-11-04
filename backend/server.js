@@ -17,6 +17,8 @@ const allowedOrigins = [
   "https://www.rdevelabs.biz.id"
 ];
 
+app.use(express.static(path.join(__dirname, "public")));
+
 app.use(cors({
   origin: function (origin, callback) {
     if (!origin || allowedOrigins.includes(origin)) {
