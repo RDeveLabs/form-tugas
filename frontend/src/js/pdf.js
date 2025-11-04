@@ -244,7 +244,7 @@ uploadBtn.addEventListener("click", async () => {
     const nim = getVisible('#nim')?.value;
 
     const formData = new FormData();
-    formData.append("pdf", new Blob([previewBytes], { type: "application/pdf" }), "merged.pdf");
+    formData.append("pdf", new Blob([previewBytes], { type: "application/pdf" }), `${nama} (${nim}) TI.25.A.2.pdf`);
 
     const response = await fetch("https://api.rdevelabs.biz.id/compress-upload", {
       method: "POST",
