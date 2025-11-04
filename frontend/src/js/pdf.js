@@ -3,8 +3,9 @@ import { getVisible } from './script.js';
 import * as pdfjsLib from "/pdfjs/pdf.mjs";
 
 // kasih tahu lokasi worker
+
 pdfjsLib.GlobalWorkerOptions.workerSrc =
-        "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+        "https://cdn.jsdelivr.net/npm/pdfjs-dist@4.2.67/build/pdf.worker.min.js";
 
 
 let previewBytes = null;
