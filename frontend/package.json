@@ -8,6 +8,7 @@
         "@tailwindcss/vite": "^4.1.16",
         "compress-pdf": "^0.5.5",
         "pdf-lib": "^1.17.1",
+        "pdfjs-dist": "^5.4.394",
         "tailwindcss": "^4.1.16"
     },
     "devDependencies": {
