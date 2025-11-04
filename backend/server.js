@@ -7,7 +7,6 @@ const cors = require("cors");
 const { spawn } = require("child_process");
 const { google } = require("googleapis");
 
-require("dotenv").config();
 
 const app = express();
 
