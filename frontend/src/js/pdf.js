@@ -238,7 +238,7 @@ uploadBtn.addEventListener("click", async () => {
 
   try {
     loadingOverlay.classList.remove("hidden");
-    loadingStatus.textContent = "Mengompres...";
+    loadingStatus.textContent = "Mengompres ...";
 
     const nama = getVisible('#nama')?.value;
     const nim = getVisible('#nim')?.value;
@@ -246,14 +246,14 @@ uploadBtn.addEventListener("click", async () => {
     const formData = new FormData();
     formData.append("pdf", new Blob([previewBytes], { type: "application/pdf" }), "merged.pdf");
 
-    const response = await fetch("https://api.rdevelabs.biz.id/compress", {
+    const response = await fetch("https://api.rdevelabs.biz.id/compress-upload", {
       method: "POST",
       body: formData
     });
 
     const compressedBlob = await response.blob();
     download(compressedBlob, `${nama} (${nim}) TI.25.A.2.pdf`, "application/pdf");
-    alert("File berhasil dikompres & didownload!");
+    alert("File berhasil dikompres & diupload!");
   } catch (err) {
     console.error(err);
     alert("Error upload: " + err.message);
