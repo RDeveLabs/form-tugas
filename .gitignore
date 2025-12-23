@@ -9,6 +9,8 @@ coverage/
 # Production
 dist/
 build/
+certbot/
+*.tsbuildinfo
 
 # Misc
 .DS_Store
@@ -31,3 +33,9 @@ yarn-error.log*
 # OS
 .DS_Store
 Thumbs.db
+
+**/Dockerfile
+docker-compose.yaml
+
+*.pdf
+package-lock.json
