@@ -246,7 +246,7 @@ uploadBtn.addEventListener("click", async () => {
     const formData = new FormData();
     formData.append("pdf", new Blob([previewBytes], { type: "application/pdf" }), `${nama} (${nim}) TI.25.A.2.pdf`);
 
-    const response = await fetch("https://api.rdevelabs.biz.id/compress-upload", {
+    const response = await fetch("http://localhost:3000/kompres", {
       method: "POST",
       body: formData
     });
@@ -256,9 +256,14 @@ uploadBtn.addEventListener("click", async () => {
       throw new Error("Server error: " + text);
     }
 
-    const result = await response.json();
+    const blob = await response.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "compressed.pdf"; // nama file download
+    a.click();
+    URL.revokeObjectURL(url);
 
-    alert(`✅ File berhasil diupload ke Google Drive!\nLink: ${result.webViewLink}`);
 
   } catch (err) {
     console.error(err);

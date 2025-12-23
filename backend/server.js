@@ -1,166 +1,113 @@
 const express = require("express");
-const fileUpload = require("express-fileupload");
+const cors = require('cors')
+const fileUpload = require('express-fileupload')
+const axios = require('axios');
+const fd = require('form-data')
 const fs = require("fs");
 const path = require("path");
-const crypto = require("crypto");
-const cors = require("cors");
-const { spawn } = require("child_process");
-const { google } = require("googleapis");
 require("dotenv").config();
+
 
 const app = express();
 
-// CORS whitelist
-const allowedOrigins = [
-  "https://rdevelabs.biz.id",
-  "https://www.rdevelabs.biz.id"
-];
+app.use(cors());
+app.use(fileUpload());
 
-app.use(cors({
-  origin: function (origin, callback) {
-    if (!origin || allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      callback(new Error("Not allowed by CORS: " + origin));
-    }
-  },
-  methods: ["GET", "POST"],
-  allowedHeaders: ["Content-Type"]
-}));
+const tempPath = path.join(__dirname, "temp_input.pdf");
 
-// enable file upload
-app.use(fileUpload({
-  limits: { fileSize: 50 * 1024 * 1024 }, // 50 MB
-  abortOnLimit: true,
-}));
-
-// Google OAuth2 setup
-const CLIENT_ID = process.env.CLIENT_ID;
-const CLIENT_SECRET = process.env.CLIENT_SECRET;
-const REDIRECT_URI = process.env.REDIRECT_URI;
-
-const oauth2Client = new google.auth.OAuth2(
-  CLIENT_ID,
-  CLIENT_SECRET,
-  REDIRECT_URI
-);
-
-console.log("CLIENT_ID:", CLIENT_ID);
-console.log("REDIRECT_URI:", REDIRECT_URI);
-
-// coba load token.json kalau ada
-const tokenPath = path.join(__dirname, "token.json");
-if (fs.existsSync(tokenPath)) {
-  const tokens = JSON.parse(fs.readFileSync(tokenPath));
-  oauth2Client.setCredentials(tokens);
-}
-
-// endpoint login
-app.get("/login", (req, res) => {
-  const url = oauth2Client.generateAuthUrl({
-    access_type: "offline",
-    scope: ["https://www.googleapis.com/auth/drive.file"]
-  });
-  res.redirect(url);
-});
-
-// callback setelah login
-app.get("/oauth2callback", async (req, res) => {
-  try {
-    const { code } = req.query;
-    const { tokens } = await oauth2Client.getToken(code);
-    oauth2Client.setCredentials(tokens);
-    fs.writeFileSync(tokenPath, JSON.stringify(tokens));
-    res.send("✅ Login berhasil, token disimpan!");
-  } catch (err) {
-    console.error("OAuth2 Error:", err.message);
-    res.status(500).json({ success: false, error: "OAuth2 callback gagal", details: err.message });
-  }
-});
-
-// fungsi kompres PDF pakai Ghostscript
-function compressWithGhostscript(inputPath, outputPath, quality = "/ebook") {
-  return new Promise((resolve, reject) => {
-    const args = [
-      "-sDEVICE=pdfwrite",
-      "-dCompatibilityLevel=1.4",
-      `-dPDFSETTINGS=${quality}`,
-      "-dNOPAUSE",
-      "-dQUIET",
-      "-dBATCH",
-      `-sOutputFile=${outputPath}`,
-      inputPath,
-    ];
-
-    const gs = spawn("gs", args);
-    let stderr = "";
-
-    gs.stderr.on("data", (data) => { stderr += data.toString(); });
-    gs.on("close", (code) => {
-      if (code === 0) resolve();
-      else reject(new Error(`Ghostscript exited with code ${code}: ${stderr}`));
-    });
-    gs.on("error", (err) => reject(new Error(`Ghostscript error: ${err.message}`)));
-  });
-}
-
-// endpoint compress + upload ke Google Drive
-app.post("/compress-upload", async (req, res) => {
-  try {
+app.post('/kompres', async(req, res) => {
+  try{
     if (!req.files || !req.files.pdf) {
       return res.status(400).json({ success: false, error: "No PDF uploaded" });
     }
 
-    const file = req.files.pdf;
+    const authRes = await axios.post("https://api.ilovepdf.com/v1/auth", {
+      public_key: process.env.PUBLIC_KEY,
+    });
+    const token = authRes.data.token;
+    // Catatan: token berlaku ±2 jam
 
-    // bikin folder temp unik
-    const uuid = crypto.randomUUID();
-    const tempDir = path.join(__dirname, "temp", uuid);
-    fs.mkdirSync(tempDir, { recursive: true });
+    // 2) Start → dapatkan server & task id
+    const startRes = await axios.get(
+      `https://api.ilovepdf.com/v1/start/compress/us`,
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+    const { server, task } = startRes.data;
 
-    const inputPath = path.join(tempDir, "input.pdf");
-    const outputPath = path.join(tempDir, "output.pdf");
+    // 3) Upload → kirim semua file ke server yang ditunjuk
+    const uploaded = [];
+    await req.files.pdf.mv(tempPath);
+    const form = new fd();
+    form.append("task", task);
+    form.append("file", fs.createReadStream(path.resolve(tempPath)));
 
-    // simpan file asli dulu
-    await file.mv(inputPath);
+    const uploadRes = await axios.post(`https://${server}/v1/upload`, form, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        ...form.getHeaders(),
+      },
+    });
 
-    // kompres pakai Ghostscript
-    await compressWithGhostscript(inputPath, outputPath);
+    // Simpan server_filename untuk dipakai di step process
+    uploaded.push({
+      server_filename: uploadRes.data.server_filename,
+      filename: req.files.pdf.name,
+    });
 
-    if (!fs.existsSync(outputPath)) {
-      return res.status(500).json({ success: false, error: "Compression failed" });
+    // 4) Process → jalankan merge dengan urutan files sesuai array
+    const processRes = await axios.post(
+      `https://${server}/v1/process`,
+      {
+        task,
+        tool: "compress",
+        files: uploaded.map((f) => ({
+          server_filename: f.server_filename,
+          filename: f.filename,
+          rotate: 0,
+        })),
+        // Optional: output_filename, packaged_filename, ignore_errors, dll
+        output_filename: "compressed",
+      },
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+
+    if (processRes.data.status !== "TaskSuccess") {
+      console.warn("Process status:", processRes.data.status);
     }
 
-    // upload hasil kompres ke Google Drive
-    const drive = google.drive({ version: "v3", auth: oauth2Client });
-    const fileMetadata = { 
-      name: file.name,
-      parents: ["1U3tc5qIkXtE_keQjkaWMXfjBGuiRdnFM"] // ID folder tujuan
-    };
-    const media = {
-      mimeType: file.mimetype,
-      body: fs.createReadStream(outputPath)
-    };
+    // 5) Download → ambil hasil PDF
+    const downloadRes = await axios.get(
+      `https://${server}/v1/download/${task}`,
+      {
+        headers: { Authorization: `Bearer ${token}` },
+        responseType: "arraybuffer",
+      }
+    );
 
-    const responseDrive = await drive.files.create({
-      resource: fileMetadata,
-      media,
-      fields: "id, webViewLink, webContentLink"
-    });
+    // Simpan sebagai merged.pdf
+    fs.writeFileSync("merged_compressed.pdf", downloadRes.data);
+    console.log("Selesai: merged.pdf");
 
-    // hapus file lokal setelah selesai
-    fs.rmSync(tempDir, { recursive: true, force: true });
+    // di server
+    res.download(path.join(__dirname, "merged_compressed.pdf"), "compressed.pdf");
 
-    res.json({
-      success: true,
-      id: responseDrive.data.id,
-      webViewLink: responseDrive.data.webViewLink,
-      webContentLink: responseDrive.data.webContentLink
-    });
 
   } catch (err) {
-    console.error("❌ Error:", err.message);
-    res.status(500).json({ success: false, error: "Gagal compress+upload", details: err.message });
+    // Tampilkan detail error dari API
+    if (err.response?.data) {
+      console.error("API Error:", JSON.stringify(err.response.data, null, 2));
+      return res.status(500).json({ success: false, error: err.message });
+    } else {
+      return res.status(500).json({ success: false, error: err.message });
+    }
+  } finally{
+      try {
+        if (fs.existsSync(tempPath)) {
+          fs.unlinkSync(tempPath);
+        }
+      } catch (e) {
+        console.warn("Gagal hapus temp file:", e.message);
+      }
   }
 });
 
