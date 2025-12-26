@@ -98,7 +98,7 @@ async function createCoverPage(pertemuanNum, nama, nim) {
       font: timesRomanFont
   })
 
-  page.drawText('Matematika', {
+  page.drawText('Matematika Kalkulus', {
       x: valueX,
       y: height - 7 * 22,
       size: 12,
@@ -170,6 +170,7 @@ const previewBtn = document.getElementById("preview");
 const homePage = document.getElementById("home");
 const previewPage = document.getElementById("pratinjau");
 const iframeView = document.getElementById("view");
+const previewmobile = document.getElementById("lihat");
 const backBtn = document.getElementById("back");
 const uploadBtn = document.getElementById("upload"); // ganti id di HTML
 const loadingOverlay = document.getElementById("loading-overlay"); 
@@ -212,6 +213,7 @@ previewBtn.addEventListener("click", async () => {
     // tampilkan di iframe
     const blob = new Blob([previewBytes], { type: "application/pdf" });
     iframeView.src = URL.createObjectURL(blob);
+    previewmobile.href = URL.createObjectURL(blob);
 
     // pindah halaman
     homePage.style.display = "none";

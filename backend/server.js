@@ -5,6 +5,7 @@ const axios = require('axios');
 const fd = require('form-data')
 const fs = require("fs");
 const path = require("path");
+const crypto = require('crypto');
 require("dotenv").config();
 
 
@@ -14,6 +15,53 @@ app.use(cors());
 app.use(fileUpload());
 
 const tempPath = path.join(__dirname, "temp_input.pdf");
+
+const accountId = "005db9daecf9b340000000002"; 
+const appKey = "K005nfgExOsm2EwgBSbDPHShiTUKQns"; 
+const authKey = Buffer.from(`${accountId}:${appKey}`).toString("base64"); 
+// async function blaze() {
+//   try {
+//     const auth = await axios.get("https://api.backblazeb2.com/b2api/v4/b2_authorize_account",
+//       { headers: { Authorization: `Basic ${authKey}` } });
+//     const apiUrl = auth.data.apiInfo.storageApi.apiUrl;
+//     const authToken = auth.data.authorizationToken;
+
+//     const buckets = await axios.post(
+//       `${apiUrl}/b2api/v4/b2_list_buckets`,
+//       { accountId: auth.data.accountId },
+//       { headers: { Authorization: authToken } }
+//     );
+//     const bucket = buckets.data.buckets[0].bucketId;
+
+//     const uploadUrl = await axios.post(
+//       `${apiUrl}/b2api/v4/b2_get_upload_url`,
+//       { bucketId : bucket},
+//       { headers: { Authorization: authToken } }
+//     );
+//     const uploadToken = uploadUrl.data.authorizationToken;
+//     const uploadLink = uploadUrl.data.uploadUrl;
+
+//     const fileBuffer = fs.readFileSync("merged_compressed.pdf"); 
+//     const sha1 = crypto.createHash("sha1").update(fileBuffer).digest("hex"); 
+//     const contenLength = fileBuffer.length;
+//     const upload = await axios.post(
+//       `${apiUrl}/b2api/v4/b2_upload_file`,
+//       { 
+//         headers: { 
+//           Authorization: uploadToken,
+//           "X-Bz-File-Name"    : "compressed.pdf",
+//           "Content-Type"      : "application/pdf",
+//           "Content-Length"    : contenLength,
+//           "X-Bz-Content-Sha1" : sha1
+//          }, 
+//       }
+//     );
+//   } catch (err) {
+//     console.error(err.response?.data || err.message);
+//   }
+
+// }
+// blaze();
 
 app.post('/kompres', async(req, res) => {
   try{
@@ -66,6 +114,7 @@ app.post('/kompres', async(req, res) => {
           rotate: 0,
         })),
         // Optional: output_filename, packaged_filename, ignore_errors, dll
+        compression_level: "recommended",
         output_filename: "compressed",
       },
       { headers: { Authorization: `Bearer ${token}` } }
@@ -87,6 +136,49 @@ app.post('/kompres', async(req, res) => {
     // Simpan sebagai merged.pdf
     fs.writeFileSync("merged_compressed.pdf", downloadRes.data);
     console.log("Selesai: merged.pdf");
+
+    const auth = await axios.get("https://api.backblazeb2.com/b2api/v4/b2_authorize_account",
+      { headers: { Authorization: `Basic ${authKey}` } });
+    const apiUrl = auth.data.apiInfo.storageApi.apiUrl;
+    const authToken = auth.data.authorizationToken;
+
+    const buckets = await axios.post(
+      `${apiUrl}/b2api/v4/b2_list_buckets`,
+      { accountId: auth.data.accountId },
+      { headers: { Authorization: authToken } }
+    );
+    const bucket = buckets.data.buckets[0].bucketId;
+
+    const uploadUrl = await axios.post(
+      `${apiUrl}/b2api/v4/b2_get_upload_url`,
+      { bucketId : bucket},
+      { headers: { Authorization: authToken } }
+    );
+    const uploadToken = uploadUrl.data.authorizationToken;
+    const uploadLink = uploadUrl.data.uploadUrl;
+    console.log(uploadLink);
+
+    const fileBuffer = fs.readFileSync("merged_compressed.pdf"); 
+    const sha1 = crypto.createHash("sha1").update(fileBuffer).digest("hex"); 
+    const contentLength = fileBuffer.length;
+    const namaFile = encodeURIComponent(req.files.pdf.name); //format ke UTF-8
+
+    const upload = await axios.post(
+      uploadLink, // endpoint dari b2_get_upload_url
+      fileBuffer,               // body = raw file
+      {
+        headers: {
+          Authorization: uploadToken,
+          "X-Bz-File-Name": namaFile,
+          "Content-Type": "application/pdf",
+          "Content-Length": contentLength,
+          "X-Bz-Content-Sha1": sha1,
+        },
+        maxBodyLength: Infinity,
+        maxContentLength: Infinity,
+      }
+    );
+
 
     // di server
     res.download(path.join(__dirname, "merged_compressed.pdf"), "compressed.pdf");

@@ -2,5 +2,6 @@
 @import "tailwindcss";
 
 @theme{
+    --default-font-family: 'Poppins';
     --font-judul: 'Poppins';
 }

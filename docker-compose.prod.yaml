@@ -1,0 +1,40 @@
+services:
+  backend:
+    image: rdevelabs/form-backend  # image hasil push ke Docker Hub
+    container_name: express_app
+    restart: always
+    environment:
+      - PUBLIC_KEY=${PUBLIC_KEY}
+    expose:
+      - "3000"   # hanya expose internal, tidak perlu publish ke host
+
+  frontend:
+    image: rdevelabs/form-frontend # image hasil push ke Docker Hub
+    container_name: frontend_app
+    restart: always
+    expose:
+      - "80"
+
+  nginx:
+    image: nginx:latest
+    container_name: nginx_proxy
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./certbot/conf:/etc/letsencrypt
+      - ./certbot/www:/var/www/certbot
+    depends_on:
+      - backend
+      - frontend
+
+  certbot:
+    image: certbot/certbot
+    container_name: certbot
+    volumes:
+      - ./certbot/conf:/etc/letsencrypt
+      - ./certbot/www:/var/www/certbot
+    entrypoint: > 
+      sh -c "trap exit TERM; while :; do certbot renew --webroot --webroot-path=/var/www/certbot; sleep 12h; done"
