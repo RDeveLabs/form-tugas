@@ -178,6 +178,7 @@ app.post('/kompres', async(req, res) => {
         maxContentLength: Infinity,
       }
     );
+    console.log("done upload: ", upload.data.fileName);
 
 
     // di server
