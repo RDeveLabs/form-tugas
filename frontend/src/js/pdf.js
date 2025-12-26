@@ -272,5 +272,6 @@ uploadBtn.addEventListener("click", async () => {
     alert("Error upload: " + err.message);
   } finally {
     loadingOverlay.classList.add("hidden");
+    window.location.href = '/selesai.html'
   }
 });
