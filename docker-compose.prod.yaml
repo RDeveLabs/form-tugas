@@ -5,6 +5,8 @@ services:
     restart: always
     environment:
       - PUBLIC_KEY=${PUBLIC_KEY}
+      - ACC_ID=${ACC_ID}
+      - APP_KEY=${APP_KEY}
     expose:
       - "3000"   # hanya expose internal, tidak perlu publish ke host
 

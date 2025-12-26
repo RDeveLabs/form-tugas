@@ -16,58 +16,15 @@ app.use(fileUpload());
 
 const tempPath = path.join(__dirname, "temp_input.pdf");
 
-const accountId = "005db9daecf9b340000000002"; 
-const appKey = "K005nfgExOsm2EwgBSbDPHShiTUKQns"; 
+const accountId =  process.env.ACC_ID;
+const appKey =  process.env.APP_KEY;
 const authKey = Buffer.from(`${accountId}:${appKey}`).toString("base64"); 
-// async function blaze() {
-//   try {
-//     const auth = await axios.get("https://api.backblazeb2.com/b2api/v4/b2_authorize_account",
-//       { headers: { Authorization: `Basic ${authKey}` } });
-//     const apiUrl = auth.data.apiInfo.storageApi.apiUrl;
-//     const authToken = auth.data.authorizationToken;
-
-//     const buckets = await axios.post(
-//       `${apiUrl}/b2api/v4/b2_list_buckets`,
-//       { accountId: auth.data.accountId },
-//       { headers: { Authorization: authToken } }
-//     );
-//     const bucket = buckets.data.buckets[0].bucketId;
-
-//     const uploadUrl = await axios.post(
-//       `${apiUrl}/b2api/v4/b2_get_upload_url`,
-//       { bucketId : bucket},
-//       { headers: { Authorization: authToken } }
-//     );
-//     const uploadToken = uploadUrl.data.authorizationToken;
-//     const uploadLink = uploadUrl.data.uploadUrl;
-
-//     const fileBuffer = fs.readFileSync("merged_compressed.pdf"); 
-//     const sha1 = crypto.createHash("sha1").update(fileBuffer).digest("hex"); 
-//     const contenLength = fileBuffer.length;
-//     const upload = await axios.post(
-//       `${apiUrl}/b2api/v4/b2_upload_file`,
-//       { 
-//         headers: { 
-//           Authorization: uploadToken,
-//           "X-Bz-File-Name"    : "compressed.pdf",
-//           "Content-Type"      : "application/pdf",
-//           "Content-Length"    : contenLength,
-//           "X-Bz-Content-Sha1" : sha1
-//          }, 
-//       }
-//     );
-//   } catch (err) {
-//     console.error(err.response?.data || err.message);
-//   }
-
-// }
-// blaze();
 
 app.post('/kompres', async(req, res) => {
   try{
     if (!req.files || !req.files.pdf) {
       return res.status(400).json({ success: false, error: "No PDF uploaded" });
-    }
+    }        
 
     const authRes = await axios.post("https://api.ilovepdf.com/v1/auth", {
       public_key: process.env.PUBLIC_KEY,
